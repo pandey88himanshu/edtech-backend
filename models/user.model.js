@@ -1,48 +1,59 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  lastName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  accountType: {
-    type: String,
-    enum: ["Admin", "Student", "Instructor"],
-    required: true,
-  },
-  additionalDetails: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: "profile",
-  },
-  courses: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "course",
+const userSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: [true, "First name is required"],
+      trim: true,
     },
-  ],
-  image: {
-    type: String,
-    required: true,
+    lastName: {
+      type: String,
+      required: [true, "Last name is required"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      trim: true,
+      unique: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters long"],
+    },
+    accountType: {
+      type: String,
+      enum: ["Admin", "Student", "Instructor"],
+      required: [true, "Account type is required"],
+    },
+    additionalDetails: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Profile",
+      required: true,
+    },
+    courses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
+    image: {
+      type: String,
+      required: [true, "Profile image is required"],
+    },
+    courseProgress: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CourseProgress",
+      },
+    ],
   },
-  courseProgress: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "courseProgress" },
-  ],
-});
+  {
+    timestamps: true,
+  }
+);
 
-module.exports = mongoose.model("user", userSchema);
+module.exports = mongoose.model("User", userSchema);
