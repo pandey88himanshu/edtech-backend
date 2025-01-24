@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
     additionalDetails: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Profile",
-      required: true,
+      // required: true,
     },
     courses: [
       {
@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema(
     ],
     image: {
       type: String,
-      required: [true, "Profile image is required"],
+      // required: [true, "Profile image is required"],
     },
     courseProgress: [
       {
