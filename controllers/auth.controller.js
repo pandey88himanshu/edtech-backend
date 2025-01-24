@@ -3,6 +3,8 @@ const OTP = require("../models/otp.model");
 const Profile = require("../models/profile.model");
 const otpGenerator = require("otp-generator");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 //send otp starts
 exports.sendOTP = async (req, res) => {
   try {
@@ -113,3 +115,70 @@ exports.signUp = async (req, res) => {
   }
 };
 //sign up ends
+//login start
+exports.login = async (req, res) => {
+  try {
+    //fetch data from body
+    const { email, password } = req.body;
+    //validate data
+    if (!email || !password) {
+      return res
+        .status(403)
+        .json({ success: false, message: "all fields are required" });
+    }
+    //user exists or not
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "user not found please create account",
+      });
+    }
+    //generate jwt after matching password
+    if (await bcrypt.compare(password, user.password)) {
+      const payload = {
+        email: user.email,
+        id: user._id,
+        role: user.role,
+      };
+      const token = jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: "2h",
+      });
+      user.token = token;
+      user.password = undefined;
+
+      //create cookie and send response
+      const options = {
+        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+      };
+      res.cookie("token", token, options).status(200).json({
+        success: true,
+        token,
+        user,
+        message: "Logged in successfully",
+      });
+    } else {
+      return res
+        .status(401)
+        .json({ success: false, message: "Password is in correct" });
+    }
+  } catch (error) {
+    console.log("error in login", error.message);
+  }
+};
+//login ends
+//change pasword starts
+exports.changePassword = async (req, res) => {
+  try {
+    //get the data from the body
+    //get old pass , new pass
+    //validation
+    //update pass in db
+    //send mail password updated
+    //send res
+  } catch (error) {
+    console.log("error in changing the password", error.message);
+  }
+};
+//change pasword ends
