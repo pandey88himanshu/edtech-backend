@@ -4,13 +4,16 @@ const Profile = require("../models/profile.model");
 const otpGenerator = require("otp-generator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const otpTemplate = require("../mail/templates/emailVerificationTemplate");
 require("dotenv").config();
 //send otp starts
 exports.sendOTP = async (req, res) => {
   try {
-    //fetch email
+    // Fetch email from the request body
     const { email } = req.body;
-    //checking user exists
+
+    // Check if the user already exists
     const checkUserPresent = await User.findOne({ email });
     if (checkUserPresent) {
       return res.status(401).json({
@@ -18,35 +21,62 @@ exports.sendOTP = async (req, res) => {
         message: "User already registered",
       });
     }
-    //generate otp
+
+    // Generate OTP
     var otp = otpGenerator.generate(6, {
       upperCaseAlphabets: false,
       lowerCaseAlphabets: false,
       specialChars: false,
     });
-    console.log(otp);
-    //check unique otp or not
-    const otpExists = await OTP.findOne({ otp: otp });
+    console.log("Generated OTP:", otp);
+
+    // Check for unique OTP
+    let otpExists = await OTP.findOne({ otp });
     while (otpExists) {
-      otp = otpGenerator(6, {
+      otp = otpGenerator.generate(6, {
         upperCaseAlphabets: false,
         lowerCaseAlphabets: false,
         specialChars: false,
       });
-      otpExists = await OTP.findOne({ otp: otp });
+      otpExists = await OTP.findOne({ otp });
     }
+
+    // Create OTP entry in the database
     const otpPayload = { email, otp };
-    //create entry in db for otp
     const otpBody = await OTP.create(otpPayload);
-    console.log(otpBody);
-    //return respon
+    console.log("OTP saved to DB:", otpBody);
+
+    // Email configuration
+    const transporter = nodemailer.createTransport({
+      service: "gmail", // Use any email service
+      auth: {
+        user: process.env.MAIL_USER, // Your email
+        pass: process.env.MAIL_PASS, // Your app password
+      },
+    });
+
+    // Prepare email content
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: "Your OTP for StudyNotion",
+      html: otpTemplate(otp), // Use the HTML template
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    // Return response
     res.status(200).json({
       success: true,
-      message: "otp sent successfull",
-      otp,
+      message: "OTP sent successfully",
     });
   } catch (error) {
-    console.log("Error in sending otp", error.message);
+    console.error("Error in sending OTP:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send OTP",
+    });
   }
 };
 
