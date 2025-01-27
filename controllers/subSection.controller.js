@@ -1,51 +1,72 @@
 const SubSection = require("../models/subSection.model");
 const Section = require("../models/section.model");
+const Course = require("../models/course.model");
 const { uploadToCloudinary } = require("../utils/imageUploader");
 require("dotenv").config();
-//create section
 
 exports.createSubSection = async (req, res) => {
   try {
-    //fetch data
-    const { sectionId, title, timeDuration, description } = req.body;
-    // extract file/Video
-    const video = req.files.videoFile;
-    //validation
-    if (!sectionId || !title || !timeDuration || !description) {
+    // Extract necessary information from the request body
+    const { sectionId, title, description, courseId, timeDuration } = req.body;
+    const video = req.files.video;
+
+    // Check if all necessary fields are provided
+    if (
+      !sectionId ||
+      !title ||
+      !description ||
+      !video ||
+      !courseId ||
+      !timeDuration
+    ) {
       return res
-        .status(400)
-        .json({ success: false, message: "All Fields are required" });
+        .status(404)
+        .json({ success: false, message: "All Fields are Required" });
     }
-    //upload video to cloudinary
-    const uplaodDetails = await uploadToCloudinary(
+
+    // Check if the section exists
+    const ifsection = await Section.findById(sectionId);
+    if (!ifsection) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Section not found" });
+    }
+
+    // Upload the video file to Cloudinary
+    const uploadDetails = await uploadToCloudinary(
       video,
-      process.env.FOLDER_NAME
+      process.env.FOLDER_VIDEO
     );
-    //create a sub section
-    const subSectionDetails = await SubSection.create({
+
+    // Create a new sub-section with the necessary information
+    const SubSectionDetails = await SubSection.create({
       title: title,
       timeDuration: timeDuration,
       description: description,
-      videoUrl: uplaodDetails.secure_url,
+      videoUrl: uploadDetails.secure_url,
     });
-    //upload section with this sub section object id
+
+    // Update the corresponding section with the newly created sub-section
     const updatedSection = await Section.findByIdAndUpdate(
       { _id: sectionId },
-      { $push: { subSection: subSectionDetails._id } },
+      { $push: { subSection: SubSectionDetails._id } },
       { new: true }
-    );
-    //lg updated sectin after populating
-    //return res
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Section created successfully",
-        updatedSection,
-      });
+    ).populate("subSection");
+
+    // Populate the course with its sections and sub-sections
+    const updatedCourse = await Course.findById(courseId)
+      .populate({ path: "courseContent", populate: { path: "subSection" } })
+      .exec();
+
+    // Return the updated course in the response
+    return res.status(200).json({ success: true, data: updatedCourse });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Error in creating sub section" });
+    // Handle any errors that may occur during the process
+    console.error("Error creating new sub-section:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
