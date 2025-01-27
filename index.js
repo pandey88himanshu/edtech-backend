@@ -4,6 +4,7 @@ require("./config/database");
 require("dotenv").config();
 
 const auth = require("./routes/auth.routes");
+const profile = require("./routes/profile.routes");
 
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -21,7 +22,7 @@ app.use(
 );
 cloudinaryConnect();
 
-app.use("/api/v1", auth);
+app.use("/api/v1", auth, profile);
 app.get("/", (req, res) => {
   res.send("This is home page");
 });
