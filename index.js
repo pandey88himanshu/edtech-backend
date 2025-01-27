@@ -5,8 +5,9 @@ require("dotenv").config();
 
 const auth = require("./routes/auth.routes");
 const profile = require("./routes/profile.routes");
-
+const course = require("./routes/course.routes");
 const cookieParser = require("cookie-parser");
+
 const cors = require("cors");
 const { cloudinaryConnect } = require("./config/cloudinary");
 const fileUpload = require("express-fileupload");
@@ -22,7 +23,7 @@ app.use(
 );
 cloudinaryConnect();
 
-app.use("/api/v1", auth, profile);
+app.use("/api/v1", auth, profile, course);
 app.get("/", (req, res) => {
   res.send("This is home page");
 });

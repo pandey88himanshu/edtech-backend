@@ -8,7 +8,7 @@ const profileSchema = new mongoose.Schema(
       trim: true,
     },
     dateOfBirth: {
-      type: Date,
+      type: String,
       // required: [true, "Date of Birth is required"],
     },
     about: {

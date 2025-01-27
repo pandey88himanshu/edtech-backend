@@ -2,40 +2,58 @@ const Profile = require("../models/profile.model");
 const User = require("../models/user.model");
 const { uploadToCloudinary } = require("../utils/imageUploader");
 require("dotenv").config();
+
+//update profile starts
 exports.updateProfile = async (req, res) => {
   try {
-    //get data
-    const { dateOfBirth = "", about = "", contactNumber, gender } = req.body;
-    //get user id
+    const {
+      firstName = "",
+      lastName = "",
+      dateOfBirth = "",
+      about = "",
+      contactNumber = "",
+      gender = "",
+    } = req.body;
     const id = req.user.id;
-    //validation
-    if (!contactNumber || !gender || !id) {
-      return res
-        .status(403)
-        .json({ success: false, message: "All Fileds are required" });
-    }
-    //find profile
+
+    // Find the profile by id
     const userDetails = await User.findById(id);
-    const profileId = userDetails.additionalDetails;
-    const profileDetails = await Profile.findById(profileId);
-    //update profile
-    profileDetails.dateOfBirth = dateOfBirth;
-    profileDetails.about = about;
-    profileDetails.gender = gender;
-    profileDetails.contactNumber = contactNumber;
-    await profileDetails.save();
-    //return res
-    return res.status(200).json({
+    const profile = await Profile.findById(userDetails.additionalDetails);
+
+    const user = await User.findByIdAndUpdate(id, {
+      firstName,
+      lastName,
+    });
+    await user.save();
+
+    // Update the profile fields
+    profile.dateOfBirth = dateOfBirth;
+    profile.about = about;
+    profile.contactNumber = contactNumber;
+    profile.gender = gender;
+
+    // Save the updated profile
+    await profile.save();
+
+    // Find the updated user details
+    const updatedUserDetails = await User.findById(id)
+      .populate("additionalDetails")
+      .exec();
+
+    return res.json({
       success: true,
-      message: "Profile Updated successfully",
-      profileDetails,
+      message: "Profile updated successfully",
+      updatedUserDetails,
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, message: "error in updating profile" });
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
+//update profile ends
 
 //delete account
 //explore schedule this deletion -- cron job
@@ -66,7 +84,7 @@ exports.deleteAccount = async (req, res) => {
   }
 };
 
-//get all proflies
+//get all proflies starts
 exports.getUserDetails = async (req, res) => {
   try {
     //get id
@@ -87,8 +105,9 @@ exports.getUserDetails = async (req, res) => {
       .json({ success: false, message: "error in geting all profile" });
   }
 };
+//get all proflies ends
 
-//update display picture
+//update display picture starts
 
 exports.updateDisplayPicture = async (req, res) => {
   try {
@@ -144,3 +163,5 @@ exports.updateDisplayPicture = async (req, res) => {
     });
   }
 };
+
+//update display picture ends
